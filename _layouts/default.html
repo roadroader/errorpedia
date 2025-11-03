@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="{{ page.lang | default: 'ja' }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ page.title | default: site.title }}</title>
+  {% seo %}
+  {% if site.adsense_client %}
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client={{ site.adsense_client }}" crossorigin="anonymous"></script>
+  {% endif %}
+  <style>
+    :root{--w:920px}
+    body{max-width:var(--w);margin:2rem auto;padding:0 1rem;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;line-height:1.7}
+    header,footer{color:#555}
+    nav a{margin-right:.8rem;text-decoration:none}
+    nav a:hover{text-decoration:underline}
+    pre,code{font-family:ui-monospace,Consolas,monospace}
+  </style>
+</head>
+<body>
+  <header>
+    <h1><a href="{{ site.baseurl }}/">Errorpedia</a></h1>
+    <nav>
+      <a href="{{ site.baseurl }}/ja/">日本語</a>
+      <a href="{{ site.baseurl }}/en/">English</a>
+      <a href="{{ site.baseurl }}/search.html">Search</a>
+    </nav>
+    <hr>
+  </header>
+
+  <main>{{ content }}</main>
+
+  <footer>
+    <hr>
+    <small>&copy; {{ site.time | date: "%Y" }} Errorpedia</small>
+  </footer>
+</body>
+</html>
