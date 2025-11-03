@@ -3,23 +3,19 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>
-    {% if page.title %}{{ page.title }} · {% endif %}{{ site.title | default: "Errorpedia" }}
-  </title>
-  <meta name="description" content="{{ page.excerpt | default: site.description | strip_html | normalize_whitespace }}">
+  <title>{% if page.title %}{{ page.title }} · {% endif %}{{ site.title | default: "Errorpedia" }}</title>
+
+  {%- assign _desc = page.excerpt | default: site.description | strip_html | strip | replace: "
+", " " | truncate: 160 -%}
+  <meta name="description" content="{{ _desc }}">
   <link rel="canonical" href="{{ page.url | absolute_url }}">
   <link rel="icon" href="{{ '/favicon.ico' | relative_url }}">
   {% seo %}
 
   <style>
-    :root{
-      --maxw: 960px; --fg:#111; --muted:#666; --link:#0b72e7; --border:#e5e7eb; --bg:#fff;
-      --chip:#eef2ff; --chipfg:#334155; --kbd:#f3f4f6;
-    }
-    *{box-sizing:border-box}
-    html,body{margin:0;padding:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Gothic ProN","Yu Gothic UI",sans-serif;line-height:1.7}
-    a{color:var(--link);text-decoration:none}
-    a:hover{text-decoration:underline}
+    :root{--maxw:960px;--fg:#111;--muted:#666;--link:#0b72e7;--border:#e5e7eb;--bg:#fff;--chip:#eef2ff;--chipfg:#334155;--kbd:#f3f4f6}
+    *{box-sizing:border-box} html,body{margin:0;padding:0;background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Hiragino Kaku Gothic ProN","Yu Gothic UI",sans-serif;line-height:1.7}
+    a{color:var(--link);text-decoration:none} a:hover{text-decoration:underline}
     code,kbd,pre{font-family:ui-monospace,Menlo,Consolas,monospace}
     pre{overflow:auto;border:1px solid var(--border);border-radius:12px;padding:1rem;background:#0b1020;color:#e6edf3}
     kbd{background:var(--kbd);border:1px solid var(--border);border-bottom-width:2px;border-radius:6px;padding:.1rem .35rem}
@@ -31,8 +27,6 @@
     nav.primary{display:flex;gap:1rem;align-items:center;flex-wrap:wrap}
     nav.primary a{padding:.25rem .5rem;border-radius:8px}
     nav.primary a.active{background:#f1f5f9;text-decoration:none}
-    .util{display:flex;gap:.5rem;align-items:center}
-    .srch{position:relative}
     .srch input{width:14rem;max-width:50vw;padding:.4rem .6rem;border:1px solid var(--border);border-radius:8px}
     .breadcrumbs{font-size:.9rem;color:var(--muted);margin:.75rem 0}
     .langswitch{margin:.5rem 0 1rem}
@@ -40,10 +34,6 @@
     .tags{display:flex;flex-wrap:wrap;gap:.4rem;margin:.5rem 0 1rem}
     .tag{background:var(--chip);color:var(--chipfg);padding:.15rem .5rem;border-radius:999px;font-size:.8rem}
     footer.site{margin-top:2rem;padding:1.25rem 0;border-top:1px solid var(--border);color:var(--muted);font-size:.9rem}
-    .callout{border-left:4px solid #64748b;background:#f8fafc;padding:.75rem 1rem;border-radius:8px;margin:1rem 0}
-    .callout.warn{border-color:#f59e0b;background:#fff7ed}
-    .callout.err{border-color:#ef4444;background:#fef2f2}
-    .toc{border:1px solid var(--border);border-radius:12px;padding:1rem;background:#fafafa;margin:1rem 0}
     @media (max-width:640px){ .srch input{width:10rem} }
   </style>
 
@@ -52,7 +42,7 @@
   {% endif %}
 </head>
 <body>
-  <a href="#main" style="position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden;">Skip to content</a>
+  <a href="#main" style="position:absolute;left:-9999px;">Skip to content</a>
 
   <header class="site">
     <div class="container brand">
@@ -62,11 +52,9 @@
         <a href="{{ '/en/' | relative_url }}" {% if page.url == '/en/' or page.lang == 'en' %}class="active"{% endif %}>English</a>
         <a href="{{ '/search.html' | relative_url }}" {% if page.url == '/search.html' %}class="active"{% endif %}>Search</a>
       </nav>
-      <div class="util">
-        <form action="{{ '/search.html' | relative_url }}" method="get" class="srch" role="search">
-          <input type="search" name="q" placeholder="Search…" aria-label="Search">
-        </form>
-      </div>
+      <form action="{{ '/search.html' | relative_url }}" method="get" role="search">
+        <input type="search" name="q" placeholder="Search…" aria-label="Search">
+      </form>
     </div>
   </header>
 
@@ -83,7 +71,6 @@
         {% if page.title %} › <span>{{ page.title }}</span>{% endif %}
       </nav>
 
-      {%- comment -%} 言語切替（/ja/ <-> /en/） {%- endcomment -%}
       {% assign alt_url = page.url %}
       {% if page.url contains '/ja/' %}
         {% assign alt_url = page.url | replace:'/ja/','/en/' %}
@@ -96,7 +83,6 @@
         </a>
       </div>
 
-      {%- comment -%} 更新メタ {%- endcomment -%}
       <div class="meta">
         {% if page.updatedAt %}最終更新: {{ page.updatedAt }}{% elsif page.date %}公開: {{ page.date | date: "%Y-%m-%d" }}{% endif %}
       </div>
@@ -107,9 +93,7 @@
       {% endif %}
     {% endif %}
 
-    <main id="main" role="main">
-      {{ content }}
-    </main>
+    <main id="main" role="main">{{ content }}</main>
 
     <footer class="site">
       <div>
@@ -118,9 +102,7 @@
         · <a href="{{ '/ja/' | relative_url }}">日本語</a>
         · <a href="{{ '/en/' | relative_url }}">English</a>
         · <a href="{{ '/search.html' | relative_url }}">Search</a>
-        {% if site.github and site.github.repository_url %}
-          · <a href="{{ site.github.repository_url }}">GitHub</a>
-        {% endif %}
+        {% if site.github and site.github.repository_url %} · <a href="{{ site.github.repository_url }}">GitHub</a>{% endif %}
       </div>
     </footer>
   </div>
