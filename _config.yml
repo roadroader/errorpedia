@@ -1,2 +1,6 @@
 ﻿
 theme: null
+
+plugins:
+  - jekyll-seo-tag
+  - jekyll-sitemap
