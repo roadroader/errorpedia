@@ -1,1 +1,58 @@
-﻿# （上のYAMLをそのまま貼る）
+﻿title: "Errorpedia"
+description: "エラー対策を多言語で。60秒チェック→5分解決→再発防止。"
+url: "https://roadroader.github.io"
+baseurl: "/errorpedia"
+timezone: "Asia/Tokyo"
+
+theme: jekyll-theme-primer
+
+# きれいなURL（/path/ 形式）
+permalink: pretty
+
+# Markdownエンジン（GitHub Pages互換のGFM）
+markdown: GFM
+
+# ★ここがキモ（Pattern A）
+collections_dir: content
+collections:
+  ja:
+    output: true
+    permalink: /ja/:name/
+  en:
+    output: true
+    permalink: /en/:name/
+
+# コレクション既定値
+defaults:
+  - scope:
+      path: ""
+      type: "ja"
+    values:
+      layout: "default"
+      lang: "ja"
+  - scope:
+      path: ""
+      type: "en"
+    values:
+      layout: "default"
+      lang: "en"
+
+# 使える公式プラグインのみ
+plugins:
+  - jekyll-seo-tag
+  - jekyll-sitemap
+
+# 公開しない/ビルド対象外
+exclude:
+  - node_modules/
+  - tmp/
+  - .gitignore
+  - .env
+  - generate.mjs
+  - seed_errors.csv
+  - package.json
+  - package-lock.json
+
+# 必要なら追加（通常は不要）
+# include:
+#   - robots.txt
