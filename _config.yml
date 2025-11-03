@@ -1,6 +1,39 @@
-﻿
-theme: null
+title: "Errorpedia"
+description: "エラー対策をシンプルに"
+url: "https://roadroader.github.io"
+baseurl: "/errorpedia"   # ← Project Pages では必須（ユーザーサイトなら ""）
+
+timezone: Asia/Tokyo
+markdown: kramdown
+highlighter: rouge
+
+collections_dir: content
+collections:
+  ja:
+    output: true
+    permalink: /ja/:name/
+    source: content/ja
+  en:
+    output: true
+    permalink: /en/:name/
+    source: content/en
+
+defaults:
+  - scope: { path: "", type: "ja" }
+    values: { layout: default, lang: "ja" }
+  - scope: { path: "", type: "en" }
+    values: { layout: default, lang: "en" }
 
 plugins:
   - jekyll-seo-tag
   - jekyll-sitemap
+
+exclude:
+  - node_modules
+  - tmp
+  - .env
+  - generate.mjs
+  - seed_errors.csv
+  - package.json
+  - package-lock.json
+  - README.md
