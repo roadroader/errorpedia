@@ -1,0 +1,13 @@
+---
+layout: null
+---
+[
+{% assign all = site.ja | concat: site.en %}
+{% for p in all %}
+  {
+    "title": {{ p.title | jsonify }},
+    "url": {{ p.url | relative_url | jsonify }},
+    "content": {{ p.content | strip_html | normalize_whitespace | jsonify }}
+  }{% unless forloop.last %},{% endunless %}
+{% endfor %}
+]

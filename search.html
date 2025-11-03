@@ -1,0 +1,30 @@
+---
+layout: default
+title: "Search"
+permalink: /search.html
+---
+<h2>Search</h2>
+<input id="q" type="search" placeholder="keyword..." style="width:100%;max-width:420px">
+<div id="result"></div>
+
+<script src="https://unpkg.com/lunr/lunr.js"></script>
+<script>
+(async () => {
+  const res = await fetch('{{ "/search.json" | relative_url }}');
+  const data = await res.json();
+  const idx = lunr(function () {
+    this.ref('url');
+    this.field('title'); this.field('content');
+    data.forEach(d => this.add(d));
+  });
+  const q = document.getElementById('q');
+  const out = document.getElementById('result');
+  q.addEventListener('input', () => {
+    const hits = q.value ? idx.search(q.value) : [];
+    out.innerHTML = hits.slice(0, 50).map(h => {
+      const d = data.find(x => x.url === h.ref);
+      return `<p><a href="${d.url}">${d.title}</a></p>`;
+    }).join('');
+  });
+})();
+</script>
