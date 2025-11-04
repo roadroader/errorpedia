@@ -1,15 +1,1 @@
----
-layout: null
----
-[
-{%- assign items = site.ja | concat: site.en -%}
-{%- for p in items -%}
-{
-"title": {{ p.title | jsonify }},
-"url": "{{ p.url | relative_url }}",
-"lang": "{{ p.collection }}",
-"tags": {{ p.tags | default: empty | jsonify }},
-"excerpt": {{ p.content | strip_html | truncate: 200 | jsonify }}
-}{%- unless forloop.last -%},{%- endunless -%}
-{%- endfor -%}
-]
+﻿<ここに ② の search.json 本文をそのまま貼る>
