@@ -10,3 +10,5 @@ package-lock.json
 # misc
 .DS_Store
 Thumbs.db
+
+content/_ja_backup/
