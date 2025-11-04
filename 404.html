@@ -1,6 +1,8 @@
-﻿---
-layout: default
-permalink: /404.html
----
-<h2>404 Not Found</h2>
-<p><a href='{{ site.baseurl }}/'>Go Home</a> / <a href='{{ site.baseurl }}/search.html'>Search</a></p>
+﻿<!doctype html>
+<meta charset="utf-8">
+<title>404 Not Found</title>
+<link rel="stylesheet" href="https://unpkg.com/@picocss/pico@1.5.10/css/pico.min.css">
+<main class="container">
+  <h2>404 Not Found</h2>
+  <p><a href='{{ "/" | relative_url }}'>Go Home</a> / <a href='{{ "/search.html" | relative_url }}'>Search</a></p>
+</main>
