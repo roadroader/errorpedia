@@ -1,4 +1,4 @@
----
+﻿---
 layout: default
 title: Home
 ---
@@ -9,7 +9,6 @@ title: Home
 _Last updated: {{ site.time | date: "%Y-%m-%d" }}_
 
 <style>
-/* --- Topだけの最小CSS（気に入ったら後で layout に移動OK） --- */
 .post-list{list-style:none;margin:0;padding:0}
 .post-list li{padding:.5rem 0;border-bottom:1px solid #eee;display:flex;flex-wrap:wrap;gap:.5rem 1rem;align-items:baseline}
 .post-link{font-weight:600}
