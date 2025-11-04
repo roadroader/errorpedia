@@ -24,6 +24,13 @@
 
   <main class='container'>
     {{ content }}
+{% if page.updatedAt or page.date %}
+  <hr>
+  <p><small>
+    Last updated:
+    {% if page.updatedAt %}{{ page.updatedAt | date: "%Y-%m-%d" }}{% else %}{{ page.date | date: "%Y-%m-%d" }}{% endif %}
+  </small></p>
+{% endif %}
   </main>
 
   <footer class='container' style='margin-top:2rem;'>
@@ -32,3 +39,4 @@
   </footer>
 </body>
 </html>
+
