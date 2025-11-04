@@ -1,42 +1,165 @@
-﻿<!doctype html>
-<html lang='{{ page.lang | default: site.lang | default: "ja" }}'>
+﻿<!DOCTYPE html>
+<html lang="{{ page.lang | default: 'ja' }}">
 <head>
-  <meta charset='utf-8'>
-  <meta name='viewport' content='width=device-width, initial-scale=1'>
-  <title>{% if page.title %}{{ page.title }} · {% endif %}{{ site.title }}</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+
+  {%- comment -%} 検索エンジン抑止（公開時は _config.yml の noindex:false に） {%- endcomment -%}
+  {%- if site.noindex -%}<meta name="robots" content="noindex, nofollow">{%- endif -%}
+
+  <title>
+    {%- if page.title -%}{{ page.title }} | {{ site.title }}{%- else -%}{{ site.title }}{%- endif -%}
+  </title>
+
+  {%- comment -%} canonical は baseurl を考慮して絶対URLに {%- endcomment -%}
+  <link rel="canonical" href="{{ page.url | absolute_url }}">
+
+  {%- comment -%} 許可プラグイン（jekyll-seo-tag）でOGP等を自動出力 {%- endcomment -%}
   {%- seo -%}
-  <link rel='stylesheet' href='https://unpkg.com/@picocss/pico@1.5.10/css/pico.min.css'>
+
+  {%- comment -%} 簡易 hreflang（/ja/↔/en/ にパス置換。未翻訳ページでは404になる場合あり） {%- endcomment -%}
+  {%- if page.lang == "ja" -%}
+    <link rel="alternate" hreflang="en" href="{{ page.url | replace: '/ja/', '/en/' | absolute_url }}">
+  {%- elsif page.lang == "en" -%}
+    <link rel="alternate" hreflang="ja" href="{{ page.url | replace: '/en/', '/ja/' | absolute_url }}">
+  {%- endif -%}
+
+  <style>
+    :root {
+      --bg: #ffffff;
+      --fg: #1a1a1a;
+      --muted: #6b7280;
+      --link: #2563eb;
+      --border: #e5e7eb;
+      --card: #fafafa;
+      --radius: 12px;
+      --maxw: 900px;
+    }
+    * { box-sizing: border-box; }
+    html, body { padding: 0; margin: 0; background: var(--bg); color: var(--fg); }
+    a { color: var(--link); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    img, video { max-width: 100%; height: auto; }
+    code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; }
+    pre { background: #0b1020; color: #e5e7eb; padding: 1rem; border-radius: var(--radius); overflow: auto; }
+    .container { max-width: var(--maxw); margin: 0 auto; padding: 1.2rem; }
+    .site-header { border-bottom: 1px solid var(--border); background: var(--card); }
+    .brand { display: flex; align-items: center; gap: .5rem; }
+    .brand__title { font-weight: 700; font-size: 1.1rem; }
+    nav a { margin-right: 1rem; }
+    .lang-switch { margin-left: auto; }
+    .flex { display: flex; align-items: center; gap: .75rem; flex-wrap: wrap; }
+    .pill { border: 1px solid var(--border); padding: .35rem .6rem; border-radius: 999px; color: var(--muted); font-size: .85rem; }
+    main { padding: 1.5rem 0; }
+    article { background: var(--bg); }
+    article h1 { font-size: 1.7rem; margin: .2rem 0 1rem; }
+    article h2 { font-size: 1.35rem; margin-top: 1.4rem; }
+    article h3 { font-size: 1.1rem; margin-top: 1.1rem; }
+    blockquote { border-left: 4px solid var(--border); margin: 1rem 0; padding: .5rem 1rem; color: var(--muted); background: var(--card); border-radius: 0 var(--radius) var(--radius) 0; }
+    table { border-collapse: collapse; width: 100%; overflow: auto; display: block; }
+    th, td { border: 1px solid var(--border); padding: .6rem .5rem; text-align: left; }
+    .meta { color: var(--muted); font-size: .9rem; }
+    footer { border-top: 1px solid var(--border); padding: 1.2rem 0; background: var(--card); }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0; }
+    .ad { margin: 1.2rem 0; }
+  </style>
+
+  {%- comment -%} GA4（_config.yml に ga4_id を定義した場合のみ読込） {%- endcomment -%}
+  {%- if site.ga4_id -%}
+  <script async src="https://www.googletagmanager.com/gtag/js?id={{ site.ga4_id }}"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config','{{ site.ga4_id }}');
+  </script>
+  {%- endif -%}
 </head>
+
 <body>
-  <header class='container'>
-    <h1 style='margin: .75rem 0;'><a href='{{ "/" | relative_url }}' style='text-decoration:none;'>{{ site.title }}</a></h1>
-    <nav style='display:flex; gap:.75rem; flex-wrap:wrap;'>
-      <a href='{{ "/" | relative_url }}'>Home</a>
-      <a href='{{ "/ja/" | relative_url }}'>JA</a>
-      <a href='{{ "/en/" | relative_url }}'>EN</a>
-      <a href='{{ "/search.html" | relative_url }}'>Search</a>
-      <a href='{{ "/about/" | relative_url }}'>About</a>
-      <a href='{{ "/privacy/" | relative_url }}'>Privacy</a>
-      <a href='{{ "/contact/" | relative_url }}'>Contact</a>
-    </nav>
-    <hr/>
+  <a class="sr-only" href="#content">Skip to content</a>
+
+  <header class="site-header">
+    <div class="container flex">
+      <div class="brand">
+        <a class="brand__title" href="{{ '/' | relative_url }}">{{ site.title }}</a>
+        <span class="pill">{{ site.description }}</span>
+      </div>
+
+      <nav class="flex" aria-label="Primary">
+        <a href="{{ '/' | relative_url }}">Home</a>
+        <a href="{{ '/about/'   | relative_url }}">About</a>
+        <a href="{{ '/privacy/' | relative_url }}">Privacy</a>
+        <a href="{{ '/contact/' | relative_url }}">Contact</a>
+        <a href="{{ '/search.html' | relative_url }}">Search</a>
+      </nav>
+
+      <div class="lang-switch">
+        {%- if page.lang == 'en' -%}
+          <a href="{{ page.url | replace: '/en/', '/ja/' | relative_url }}">日本語</a>
+        {%- else -%}
+          <a href="{{ page.url | replace: '/ja/', '/en/' | relative_url }}">English</a>
+        {%- endif -%}
+      </div>
+    </div>
   </header>
 
-  <main class='container'>
-    {{ content }}
-{% if page.updatedAt or page.date %}
-  <hr>
-  <p><small>
-    Last updated:
-    {% if page.updatedAt %}{{ page.updatedAt | date: "%Y-%m-%d" }}{% else %}{{ page.date | date: "%Y-%m-%d" }}{% endif %}
-  </small></p>
-{% endif %}
+  <main id="content" class="container site-main">
+    {%- comment -%} 上広告（必要なら _includes/ad.html を用意し、_config.yml に adsense_id 等を用意） {%- endcomment -%}
+    {%- if site.adsense_id -%}
+      <div class="ad">{% include ad.html %}</div>
+    {%- endif -%}
+
+    <article role="article">
+      {%- if page.title -%}
+        <h1>{{ page.title }}</h1>
+      {%- endif -%}
+
+      <div class="meta">
+        {%- assign updated = page.last_modified_at | default: page.date | default: site.time -%}
+        {%- if updated -%}
+          Last updated: {{ updated | date: "%Y-%m-%d" }}
+        {%- endif -%}
+        {%- if page.tags and page.tags != empty -%}
+          &nbsp;•&nbsp; Tags:
+          {%- for t in page.tags -%}
+            <span class="pill">{{ t }}</span>{% unless forloop.last %} {% endunless %}
+          {%- endfor -%}
+        {%- endif -%}
+      </div>
+
+      {{ content }}
+    </article>
+
+    {%- if site.adsense_id -%}
+      <div class="ad">{% include ad.html %}</div>
+    {%- endif -%}
   </main>
 
-  <footer class='container' style='margin-top:2rem;'>
-    <hr/>
-    <small>&copy; {{ site.time | date: "%Y" }} {{ site.title }}</small>
+  <footer class="container">
+    <div class="meta">
+      &copy; {{ site.time | date: "%Y" }} {{ site.title }}.
+      <span>All rights reserved.</span>
+      {%- if jekyll.environment == "development" -%}
+        &nbsp;•&nbsp;<span>Build: {{ site.time | date: "%Y-%m-%d %H:%M" }}</span>
+      {%- endif -%}
+    </div>
   </footer>
+
+  <script>
+    // 外部リンクは新規タブで開く（相対リンクは対象外）
+    (function () {
+      var links = document.querySelectorAll('a[href^="http"]');
+      var host = location.host;
+      for (var i = 0; i < links.length; i++) {
+        try {
+          if (links[i].host !== host) {
+            links[i].setAttribute('target','_blank');
+            links[i].setAttribute('rel','noopener noreferrer');
+          }
+        } catch (e) {}
+      }
+    })();
+  </script>
 </body>
 </html>
-
