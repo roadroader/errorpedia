@@ -1,18 +1,42 @@
-﻿title: "Errorpedia"
-description: "エラー対策を多言語で。60秒チェック→5分解決→再発防止。"
+﻿# =========================
+# Jekyll 基本情報
+# =========================
+title: "Errorpedia"
+description: "Windowsやツールのエラーを短く正確に直すためのメモリーベース辞典"
+timezone: "Asia/Tokyo"
+encoding: "utf-8"
+
+# GitHub Pages（プロジェクトページ）想定
+# 例: https://roadroader.github.io/errorpedia/
 url: "https://roadroader.github.io"
 baseurl: "/errorpedia"
-timezone: "Asia/Tokyo"
 
-theme: jekyll-theme-primer
+# Cloudflare Pages / 独自ドメインに切り替えるとき：
+# url: "https://example.com"
+# baseurl: ""
 
-# きれいなURL（/path/ 形式）
+# 検索エンジン抑止フラグ（公開直前に false にする）
+noindex: true
+
+# pretty permalink（/about/ のような末尾スラッシュ）
 permalink: pretty
+future: false
 
-# Markdownエンジン（GitHub Pages互換のGFM）
-markdown: GFM
+# =========================
+# Markdown / Highlighter
+# =========================
+markdown: kramdown
+highlighter: rouge
+kramdown:
+  input: GFM
+  hard_wrap: false
+  entity_output: as_input
+  smart_quotes: lsquo,rsquo,ldquo,rdquo
+  footnote_nr: 1
 
-# ★ここがキモ（Pattern A）
+# =========================
+# コレクション設定（JA/EN）
+# =========================
 collections_dir: content
 collections:
   ja:
@@ -22,14 +46,24 @@ collections:
     output: true
     permalink: /en/:name/
 
-# コレクション既定値
+# =========================
+# デフォルト値（レイアウト/言語）
+# =========================
 defaults:
+  # ルート直下の固定ページ（about/privacy/contact など）
+  - scope:
+      path: ""
+      type: "pages"
+    values:
+      layout: "default"
+  # JAコレクション
   - scope:
       path: ""
       type: "ja"
     values:
       layout: "default"
       lang: "ja"
+  # ENコレクション
   - scope:
       path: ""
       type: "en"
@@ -37,22 +71,32 @@ defaults:
       layout: "default"
       lang: "en"
 
-# 使える公式プラグインのみ
+# =========================
+# プラグイン（GitHub Pages 対応の安全牌）
+# =========================
 plugins:
-  - jekyll-seo-tag
   - jekyll-sitemap
+  - jekyll-seo-tag
 
-# 公開しない/ビルド対象外
+# jekyll-seo-tag 用の最低限メタ
+seo:
+  type: "website"
+  name: "Errorpedia"
+
+# =========================
+# ビルド対象外
+# =========================
 exclude:
   - node_modules/
-  - tmp/
-  - .gitignore
-  - .env
-  - generate.mjs
-  - seed_errors.csv
-  - package.json
-  - package-lock.json
+  - vendor/
+  - scripts/
+  - README.md
+  - LICENSE
+  - content/_ja_backup/
+  - content/_en_backup/
+  - mojibake_restore.ps1
 
-# 必要なら追加（通常は不要）
-# include:
-#   - robots.txt
+# =========================
+# その他
+# =========================
+# 末尾LFは .gitattributes で正規化済み（ここでは設定不要）
