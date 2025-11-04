@@ -15,10 +15,10 @@ baseurl: "/errorpedia"
 # url: "https://example.com"
 # baseurl: ""
 
-# 検索エンジン抑止フラグ（公開直前に false にする）
+# 公開準備が整ったら false にする
 noindex: true
 
-# pretty permalink（/about/ のような末尾スラッシュ）
+# /about/ のような末尾スラッシュURL
 permalink: pretty
 future: false
 
@@ -35,7 +35,7 @@ kramdown:
   footnote_nr: 1
 
 # =========================
-# コレクション設定（JA/EN）
+# コレクション設定（JA/EN）: content/_ja, content/_en を出力
 # =========================
 collections_dir: content
 collections:
@@ -50,12 +50,13 @@ collections:
 # デフォルト値（レイアウト/言語）
 # =========================
 defaults:
-  # ルート直下の固定ページ（about/privacy/contact など）
+  # ルート直下の固定ページ（about/privacy/contact など）を日本語既定に
   - scope:
       path: ""
       type: "pages"
     values:
       layout: "default"
+      lang: "ja"
   # JAコレクション
   - scope:
       path: ""
@@ -97,6 +98,16 @@ exclude:
   - mojibake_restore.ps1
 
 # =========================
+# Analytics / Ads
+# =========================
+# GA4 を使う場合は計測IDを入れる（使わないなら行ごと削除でOK）
+ga4_id: "G-XXXXXXX"
+
+# AdSense を使う場合のみ設定（使わないなら行ごと削除）
+adsense_id: "ca-pub-xxxxxxxxxxxxxxxx"   # あなたの publisher ID
+adsense_slot_id: "0000000000"           # レスポンシブ広告の slot ID
+
+# =========================
 # その他
 # =========================
-# 末尾LFは .gitattributes で正規化済み（ここでは設定不要）
+# 改行コードや末尾LFは .gitattributes で正規化
