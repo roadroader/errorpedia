@@ -29,19 +29,22 @@ permalink: /tags/
   <div id="alpha" class="alpha" aria-label="全タグ（アルファベット順）"></div>
 </div>
 
+<!-- Liquid を使うのはこの1行だけ -->
 <script>
   const BASE = {{ "" | relative_url | jsonify }};
   const JSON_URL = (BASE.replace(/\/$/, "") || "") + "/search.json";
+</script>
 
-  /** 小文字・NFKC 正規化 */
+{% raw %}
+<script>
+  // 小文字・NFKC 正規化
   const norm = (s) => (s || "").toLowerCase().normalize("NFKC");
 
-  /** 件数付きタグ辞書を構築 */
+  // 件数付きタグ辞書を構築
   async function loadTags() {
     const res = await fetch(JSON_URL, { cache: "no-store" });
     if (!res.ok) throw new Error("failed to load search.json");
     const db = await res.json();
-    /** @type {Record<string, number>} */
     const freq = {};
     for (const it of db.items || []) {
       for (const t of (it.tags || [])) {
@@ -54,30 +57,29 @@ permalink: /tags/
 
   function linkTo(tag) {
     const base = (BASE.replace(/\/$/, "") || "");
-    return `${base}/search/?tags=${encodeURIComponent(tag)}`;
+    return base + "/search/?tags=" + encodeURIComponent(tag);
   }
 
   function renderCloud(freq) {
     const $cloud = document.getElementById("cloud");
-    // 出現頻度上位60件、同率は名前昇順
     const items = Object.entries(freq).sort((a,b) => {
       if (b[1] !== a[1]) return b[1]-a[1];
       return a[0].localeCompare(b[0]);
     }).slice(0, 60);
 
-    $cloud.innerHTML = items.map(([tag, n]) => {
-      return `<a class="pill" href="${linkTo(tag)}" title="記事数: ${n}">
-                <span>${tag}</span><small>(${n})</small>
-              </a>`;
-    }).join("") || `<div style="color:#666;">タグがまだありません。</div>`;
+    $cloud.innerHTML = items.map(([tag, n]) =>
+      '<a class="pill" href="' + linkTo(tag) + '" title="記事数: ' + n + '">'+
+        '<span>' + tag + '</span><small>(' + n + ')</small>'+
+      '</a>'
+    ).join("") || '<div style="color:#666;">タグがまだありません。</div>';
   }
 
   function renderAlpha(freq) {
     const $alpha = document.getElementById("alpha");
     const items = Object.keys(freq).sort((a,b) => a.localeCompare(b));
-    $alpha.innerHTML = items.map(tag => {
-      return `<a href="${linkTo(tag)}">${tag}</a><span style="color:#94a3b8;">  (${freq[tag]})</span>`;
-    }).map(s => `<div>${s}</div>`).join("") || `<div style="color:#666;">タグがまだありません。</div>`;
+    $alpha.innerHTML = items.map(tag =>
+      '<div><a href="' + linkTo(tag) + '">' + tag + '</a><span style="color:#94a3b8;">  ('+ freq[tag] +')</span></div>'
+    ).join("") || '<div style="color:#666;">タグがまだありません。</div>';
   }
 
   (async () => {
@@ -86,9 +88,10 @@ permalink: /tags/
       renderCloud(freq);
       renderAlpha(freq);
     } catch (e) {
-      document.getElementById("cloud").innerHTML = `<div style="color:#c00;">読み込みに失敗しました。</div>`;
-      document.getElementById("alpha").innerHTML = "";
+      document.getElementById("cloud").innerHTML = '<div style="color:#c00;">読み込みに失敗しました。</div>';
+      document.getElementById("alpha").innerHTML = '';
       console.error(e);
     }
   })();
 </script>
+{% endraw %}
