@@ -86,7 +86,9 @@
           </div>
         {% endif %}
 
+        <main id="ep-article">
         {{ content }}
+        </main>
       </article>
     </main>
 
@@ -102,5 +104,42 @@
       </div>
     </footer>
   </div>
+  <script>
+(function () {
+  var root = document.getElementById('ep-article');
+  if (!root) return;
+
+  var re = /(https?:\/\/[^\s)<>"']+[^\s.,;:!?)<>"'])/g;
+
+  var walker = document.createTreeWalker(
+    root,
+    NodeFilter.SHOW_TEXT,
+    {
+      acceptNode: function (node) {
+        if (!node.nodeValue || !re.test(node.nodeValue)) return NodeFilter.FILTER_REJECT;
+        var el = node.parentElement;
+        if (!el) return NodeFilter.FILTER_REJECT;
+        if (el.closest('a, code, pre')) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    }
+  );
+
+  var nodes = [];
+  while (walker.nextNode()) nodes.push(walker.currentNode);
+
+  nodes.forEach(function (textNode) {
+    var html = textNode.nodeValue.replace(re, function (url) {
+      var safe = url.replace(/"/g, '&quot;');
+      return '<a href="' + safe + '" target="_blank" rel="noopener">' + url + '</a>';
+    });
+    var span = document.createElement('span');
+    span.innerHTML = html;
+    textNode.parentNode.replaceChild(span, textNode);
+    while (span.firstChild) span.parentNode.insertBefore(span.firstChild, span);
+    span.parentNode.removeChild(span);
+  });
+})();
+</script>
 </body>
 </html>
