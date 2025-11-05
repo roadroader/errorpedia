@@ -1,1 +1,94 @@
-﻿<ここに ③ の tags/index.html 本文をそのまま貼る>
+﻿---
+layout: default
+title: Tags
+permalink: /tags/
+---
+
+<style>
+  .tags-wrap { max-width: 900px; margin: 0 auto; }
+  .cloud { display: flex; flex-wrap: wrap; gap: .6rem .7rem; margin: .5rem 0 1.25rem; }
+  .pill { display: inline-flex; align-items: center; gap: .35rem; padding: .35rem .65rem;
+          border: 1px solid #e5e7eb; border-radius: 999px; background: #fff; text-decoration: none; }
+  .pill:hover { background: #f8fafc; }
+  .pill small { color: #64748b; }
+  .alpha { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: .5rem .75rem; }
+  .alpha a { text-decoration: none; }
+  .meta { color: #555; font-size: .95rem; margin: .25rem 0 1rem; }
+</style>
+
+<div class="tags-wrap">
+  <h1>Tags</h1>
+  <p class="meta">
+    この記事群のタグ一覧です。クリックすると <code>/search</code> でそのタグに絞り込みます。
+  </p>
+
+  <h2 style="margin:.5rem 0;">Popular</h2>
+  <div id="cloud" class="cloud" aria-label="人気タグ"></div>
+
+  <h2 style="margin:.5rem 0;">All tags (A–Z)</h2>
+  <div id="alpha" class="alpha" aria-label="全タグ（アルファベット順）"></div>
+</div>
+
+<script>
+  const BASE = {{ "" | relative_url | jsonify }};
+  const JSON_URL = (BASE.replace(/\/$/, "") || "") + "/search.json";
+
+  /** 小文字・NFKC 正規化 */
+  const norm = (s) => (s || "").toLowerCase().normalize("NFKC");
+
+  /** 件数付きタグ辞書を構築 */
+  async function loadTags() {
+    const res = await fetch(JSON_URL, { cache: "no-store" });
+    if (!res.ok) throw new Error("failed to load search.json");
+    const db = await res.json();
+    /** @type {Record<string, number>} */
+    const freq = {};
+    for (const it of db.items || []) {
+      for (const t of (it.tags || [])) {
+        if (!t) continue;
+        freq[t] = (freq[t] || 0) + 1;
+      }
+    }
+    return freq;
+  }
+
+  function linkTo(tag) {
+    const base = (BASE.replace(/\/$/, "") || "");
+    return `${base}/search/?tags=${encodeURIComponent(tag)}`;
+  }
+
+  function renderCloud(freq) {
+    const $cloud = document.getElementById("cloud");
+    // 出現頻度上位60件、同率は名前昇順
+    const items = Object.entries(freq).sort((a,b) => {
+      if (b[1] !== a[1]) return b[1]-a[1];
+      return a[0].localeCompare(b[0]);
+    }).slice(0, 60);
+
+    $cloud.innerHTML = items.map(([tag, n]) => {
+      return `<a class="pill" href="${linkTo(tag)}" title="記事数: ${n}">
+                <span>${tag}</span><small>(${n})</small>
+              </a>`;
+    }).join("") || `<div style="color:#666;">タグがまだありません。</div>`;
+  }
+
+  function renderAlpha(freq) {
+    const $alpha = document.getElementById("alpha");
+    const items = Object.keys(freq).sort((a,b) => a.localeCompare(b));
+    $alpha.innerHTML = items.map(tag => {
+      return `<a href="${linkTo(tag)}">${tag}</a><span style="color:#94a3b8;">  (${freq[tag]})</span>`;
+    }).map(s => `<div>${s}</div>`).join("") || `<div style="color:#666;">タグがまだありません。</div>`;
+  }
+
+  (async () => {
+    try {
+      const freq = await loadTags();
+      renderCloud(freq);
+      renderAlpha(freq);
+    } catch (e) {
+      document.getElementById("cloud").innerHTML = `<div style="color:#c00;">読み込みに失敗しました。</div>`;
+      document.getElementById("alpha").innerHTML = "";
+      console.error(e);
+    }
+  })();
+</script>

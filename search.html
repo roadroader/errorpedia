@@ -1,30 +1,352 @@
 ---
 layout: default
-title: "Search"
-permalink: /search.html
+title: Search
+permalink: /search/
+sitemap: false
 ---
-<h2>Search</h2>
-<input id="q" type="search" placeholder="keyword..." style="width:100%;max-width:420px">
-<div id="result"></div>
 
-<script src="https://unpkg.com/lunr/lunr.js"></script>
+<style>
+  .search-wrap { max-width: 900px; margin: 0 auto; }
+  .search-row { display: grid; grid-template-columns: 1fr 220px 220px 120px; gap: .75rem; align-items: end; }
+  .search-row .field { display: flex; flex-direction: column; gap: .25rem; }
+  .search-row input[type="text"] { padding: .6rem .7rem; border: 1px solid #ccc; border-radius: .5rem; }
+  .search-row select { padding: .55rem .6rem; border: 1px solid #ccc; border-radius: .5rem; }
+  .search-row button { padding: .6rem .8rem; border: 1px solid #ccc; background: #f7f7f7; border-radius: .5rem; cursor: pointer; }
+  .search-meta { margin: .75rem 0 1rem; color: #555; font-size: .95rem; display: flex; gap: .75rem; flex-wrap: wrap; align-items: center; }
+  details.filter { margin: .25rem 0 1rem; }
+  .tag-cloud { display: flex; flex-wrap: wrap; gap: .5rem .6rem; margin-top: .5rem; }
+  .tag-pill { display: inline-flex; align-items: center; gap: .35rem; padding: .3rem .55rem; border: 1px solid #ddd; border-radius: 999px; font-size: .9rem; background: #fff; }
+  .tag-pill input { accent-color: #333; }
+  .result { padding: 1rem 0; border-top: 1px solid #eee; }
+  .result h3 { margin: 0 0 .25rem; font-size: 1.15rem; }
+  .result .meta { color: #666; font-size: .9rem; display: flex; gap: .5rem; flex-wrap: wrap; }
+  .result .tags { display: inline-flex; gap: .35rem; flex-wrap: wrap; }
+  .result .tags .tag { background: #f1f5f9; border: 1px solid #e5e7eb; padding: .1rem .45rem; border-radius: .4rem; font-size: .8rem; }
+  .result p.snip { margin: .5rem 0 0; color: #333; line-height: 1.6; }
+  mark { background: #fff2a8; padding: 0 .1em; }
+  .empty { padding: 2rem 0; color: #666; }
+  @media (max-width: 900px) {
+    .search-row { grid-template-columns: 1fr; }
+  }
+</style>
+
+<div class="search-wrap">
+  <h1>Search</h1>
+
+  <div class="search-row" role="search">
+    <div class="field">
+      <label for="q">キーワード</label>
+      <input id="q" type="text" inputmode="search" placeholder="例）0x80070005 / DISM / BitLocker / 更新エラー など">
+    </div>
+
+    <div class="field">
+      <label for="lang">言語</label>
+      <select id="lang">
+        <option value="">All</option>
+        <option value="ja">日本語</option>
+        <option value="en">English</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label for="sort">並び替え</label>
+      <select id="sort">
+        <option value="relevance">関連度</option>
+        <option value="newest">新しい順</option>
+        <option value="oldest">古い順</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label>&nbsp;</label>
+      <button id="clear">クリア</button>
+    </div>
+  </div>
+
+  <details class="filter">
+    <summary>タグで絞り込み</summary>
+    <div id="tags" class="tag-cloud" aria-label="タグ一覧"></div>
+  </details>
+
+  <div class="search-meta">
+    <span id="count">読み込み中…</span>
+    <span id="status"></span>
+  </div>
+
+  <div id="results" aria-live="polite" aria-busy="true"></div>
+</div>
+
 <script>
-(async () => {
-  const res = await fetch('{{ "/search.json" | relative_url }}');
-  const data = await res.json();
-  const idx = lunr(function () {
-    this.ref('url');
-    this.field('title'); this.field('content');
-    data.forEach(d => this.add(d));
+  /** ===== Utility ===== */
+  const BASE = {{ "" | relative_url | jsonify }};
+  const JSON_URL = (BASE.replace(/\/$/, "") || "") + "/search.json";
+
+  /** @param {string} s */
+  function norm(s) {
+    return (s || "").toLowerCase().normalize("NFKC");
+  }
+  /** @param {string} s @param {string[]} terms */
+  function highlight(s, terms) {
+    if (!s) return "";
+    let out = s;
+    for (const t of terms.filter(Boolean)) {
+      const re = new RegExp(escapeRegExp(t), "gi");
+      out = out.replace(re, m => `<mark>${m}</mark>`);
+    }
+    return out;
+  }
+  /** @param {string} s */
+  function escapeRegExp(s) {
+    return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
+  /** @param {string} updatedAt */
+  function fmtDate(updatedAt) {
+    try {
+      const d = new Date(updatedAt);
+      if (!isFinite(+d)) return updatedAt || "";
+      const y = d.getFullYear();
+      const m = String(d.getMonth()+1).padStart(2,"0");
+      const da = String(d.getDate()).padStart(2,"0");
+      return `${y}-${m}-${da}`;
+    } catch { return updatedAt || ""; }
+  }
+  /** @param {string} content @param {string[]} terms */
+  function makeSnippet(content, terms) {
+    const text = (content || "").replace(/\s+/g, " ").trim();
+    if (!text) return "";
+    const key = terms.find(t => t && text.toLowerCase().includes(t.toLowerCase()));
+    if (!key) return text.slice(0, 160) + (text.length > 160 ? "…" : "");
+    const p = text.toLowerCase().indexOf(key.toLowerCase());
+    const start = Math.max(0, p - 60);
+    const end = Math.min(text.length, p + 100);
+    const snip = text.slice(start, end);
+    return (start > 0 ? "…" : "") + snip + (end < text.length ? "…" : "");
+  }
+  /** Read URL params */
+  function getParams() {
+    const u = new URL(window.location.href);
+    const q = u.searchParams.get("q") || "";
+    const lang = u.searchParams.get("lang") || "";
+    const sort = u.searchParams.get("sort") || "relevance";
+    const tags = (u.searchParams.get("tags") || "").split(",").filter(Boolean);
+    return { q, lang, sort, tags };
+  }
+  function setParams({ q, lang, sort, tags }) {
+    const u = new URL(window.location.href);
+    if (q) u.searchParams.set("q", q); else u.searchParams.delete("q");
+    if (lang) u.searchParams.set("lang", lang); else u.searchParams.delete("lang");
+    if (sort && sort !== "relevance") u.searchParams.set("sort", sort); else u.searchParams.delete("sort");
+    if (tags && tags.length) u.searchParams.set("tags", tags.join(",")); else u.searchParams.delete("tags");
+    history.replaceState(null, "", u.toString());
+  }
+
+  /** ===== Data & Search ===== */
+  /** @type {{generatedAt:string, baseurl:string, items:Array<{id:string,title:string,errorText:string,url:string,lang:string,tags:string[],updatedAt:string,content:string}>}} */
+  let DB = { generatedAt: "", baseurl: "", items: [] };
+
+  /** @type {Record<string, number>} */
+  let TAG_FREQ = {};
+
+  const $q = document.getElementById("q");
+  const $lang = document.getElementById("lang");
+  const $sort = document.getElementById("sort");
+  const $clear = document.getElementById("clear");
+  const $tags = document.getElementById("tags");
+  const $count = document.getElementById("count");
+  const $status = document.getElementById("status");
+  const $results = document.getElementById("results");
+
+  async function loadDB() {
+    $results.setAttribute("aria-busy", "true");
+    const res = await fetch(JSON_URL, { cache: "no-store" });
+    if (!res.ok) throw new Error(`Failed to load ${JSON_URL}`);
+    DB = await res.json();
+    // Normalize & precompute fields
+    for (const it of DB.items) {
+      it._nTitle = norm(it.title || "");
+      it._nErr   = norm(it.errorText || "");
+      it._nTags  = (it.tags || []).map(norm);
+      it._nCont  = norm(it.content || "");
+      it._date   = new Date(it.updatedAt || 0).getTime() || 0;
+      (it.tags || []).forEach(t => { TAG_FREQ[t] = (TAG_FREQ[t] || 0) + 1; });
+    }
+    buildTagCloud();
+    $results.removeAttribute("aria-busy");
+  }
+
+  function buildTagCloud() {
+    const entries = Object.entries(TAG_FREQ).sort((a,b) => b[1]-a[1]).slice(0, 60);
+    $tags.innerHTML = "";
+    const { tags: selected } = getParams();
+    for (const [tag, freq] of entries) {
+      const id = `tag-${encodeURIComponent(tag)}`;
+      const wrap = document.createElement("label");
+      wrap.className = "tag-pill";
+      wrap.title = `記事数: ${freq}`;
+      wrap.innerHTML = `
+        <input type="checkbox" id="${id}">
+        <span>${tag}</span><small>(${freq})</small>`;
+      const input = wrap.querySelector("input");
+      if (selected.includes(tag)) input.checked = true;
+      input.addEventListener("change", () => {
+        const { q, lang, sort, tags } = getParams();
+        const next = new Set(tags);
+        if (input.checked) next.add(tag); else next.delete(tag);
+        setParams({ q, lang, sort, tags: [...next] });
+        runSearch();
+      });
+      $tags.appendChild(wrap);
+    }
+  }
+
+  /**
+   * Compute score
+   * @param {ReturnType<typeof getParams>} p
+   * @param {*} it
+   */
+  function scoreItem(p, it) {
+    const query = norm(p.q.trim());
+    if (!query) return 0;
+    const terms = Array.from(new Set(query.split(/\s+/).filter(Boolean)));
+    let s = 0;
+    const fullPhrase = query;
+    const fields = {
+      title: it._nTitle,
+      errorText: it._nErr,
+      tags: it._nTags.join(" "),
+      content: it._nCont
+    };
+    if (fields.title.includes(fullPhrase)) s += 20;
+    if (fields.errorText.includes(fullPhrase)) s += 12;
+
+    for (const t of terms) {
+      if (!t) continue;
+      if (fields.title.includes(t)) s += 10;
+      if (fields.errorText.includes(t)) s += 6;
+      if (fields.tags.includes(t)) s += 6;
+      // count limited occurrences in content
+      let count = 0, idx = -1, from = 0;
+      while ((idx = fields.content.indexOf(t, from)) !== -1) {
+        count++; from = idx + t.length;
+        if (count >= 5) break;
+      }
+      s += count * 2;
+    }
+    // slight recency boost
+    s += Math.min(10, (it._date / (1000*60*60*24*365))) % 10 * 0.1;
+    return s;
+  }
+
+  function applyFilters(p, items) {
+    let arr = items;
+    if (p.lang) {
+      arr = arr.filter(it => (it.lang || "").toLowerCase() === p.lang.toLowerCase());
+    }
+    if (p.tags && p.tags.length) {
+      arr = arr.filter(it => {
+        const t = new Set((it.tags || []));
+        return p.tags.some(x => t.has(x));
+      });
+    }
+    return arr;
+  }
+
+  function sortResults(p, rows) {
+    if (p.sort === "newest") rows.sort((a,b) => b._date - a._date);
+    else if (p.sort === "oldest") rows.sort((a,b) => a._date - b._date);
+    else rows.sort((a,b) => (b._score - a._score) || (b._date - a._date));
+  }
+
+  function render(list, terms) {
+    if (!list.length) {
+      $results.innerHTML = `<div class="empty">該当する記事が見つかりませんでした。</div>`;
+      return;
+    }
+    const html = list.map(it => {
+      const title = it.title || it.errorText || "(no title)";
+      const snip = makeSnippet(it.content, terms);
+      return `
+        <article class="result">
+          <h3><a href="${it.url}">${highlight(title, terms)}</a></h3>
+          <div class="meta">
+            <span>Updated: ${fmtDate(it.updatedAt)}</span>
+            ${it.lang ? `<span>Lang: ${it.lang}</span>` : ""}
+            ${it.tags?.length ? `<span class="tags">${it.tags.map(t=>`<span class="tag">${t}</span>`).join("")}</span>` : ""}
+          </div>
+          ${snip ? `<p class="snip">${highlight(snip, terms)}</p>` : ""}
+        </article>
+      `;
+    }).join("");
+    $results.innerHTML = html;
+  }
+
+  function runSearch() {
+    const p = getParams();
+    $q.value = p.q;
+    $lang.value = p.lang;
+    $sort.value = p.sort;
+
+    const qn = norm(p.q.trim());
+    const terms = Array.from(new Set(qn.split(/\s+/).filter(Boolean)));
+
+    let rows = applyFilters(p, DB.items.slice());
+    if (qn) {
+      for (const it of rows) {
+        it._score = scoreItem(p, it);
+      }
+      rows = rows.filter(it => it._score > 0);
+    } else {
+      // no query: neutral score
+      for (const it of rows) it._score = 0;
+    }
+
+    sortResults(p, rows);
+    const shown = rows.slice(0, 100);
+
+    $count.textContent = `${shown.length} / ${rows.length || 0} 件`;
+    $status.textContent = p.q ? `検索語: “${p.q}”` : "全件表示（フィルタ適用可）";
+    render(shown, terms);
+  }
+
+  /** ===== Wire up ===== */
+  function debounce(fn, ms=200){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), ms); }; }
+
+  const onQuery = debounce(() => {
+    const { lang, sort, tags } = getParams();
+    setParams({ q: $q.value, lang, sort, tags });
+    runSearch();
+  }, 200);
+
+  $q.addEventListener("input", onQuery);
+  $lang.addEventListener("change", () => {
+    const { q, sort, tags } = getParams();
+    setParams({ q, lang: $lang.value, sort, tags }); runSearch();
   });
-  const q = document.getElementById('q');
-  const out = document.getElementById('result');
-  q.addEventListener('input', () => {
-    const hits = q.value ? idx.search(q.value) : [];
-    out.innerHTML = hits.slice(0, 50).map(h => {
-      const d = data.find(x => x.url === h.ref);
-      return `<p><a href="${d.url}">${d.title}</a></p>`;
-    }).join('');
+  $sort.addEventListener("change", () => {
+    const { q, lang, tags } = getParams();
+    setParams({ q, lang, sort: $sort.value, tags }); runSearch();
   });
-})();
+  $clear.addEventListener("click", () => {
+    $q.value = "";
+    setParams({ q: "", lang: "", sort: "relevance", tags: [] });
+    Array.from($tags.querySelectorAll("input[type=checkbox]")).forEach(el => el.checked = false);
+    runSearch();
+  });
+
+  // Init
+  (async () => {
+    try {
+      const p0 = getParams();
+      $q.value = p0.q || "";
+      $lang.value = p0.lang || "";
+      $sort.value = p0.sort || "relevance";
+      await loadDB();
+      runSearch();
+      $results.setAttribute("aria-busy", "false");
+    } catch (e) {
+      $count.textContent = "読み込みに失敗しました。";
+      $status.textContent = String(e);
+      $results.innerHTML = "";
+    }
+  })();
 </script>

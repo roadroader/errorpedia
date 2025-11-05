@@ -1,1 +1,31 @@
-﻿<ここに ② の search.json 本文をそのまま貼る>
+﻿---
+layout: null
+permalink: /search.json
+sitemap: false
+---
+
+{
+  "generatedAt": {{ site.time | date_to_xmlschema | jsonify }},
+  "baseurl": {{ "" | relative_url | jsonify }},
+  "items": [
+    {%- assign docs = site.pages | where_exp: "p", "p.path contains 'content/'" -%}
+    {%- comment -%}
+      content/配下（/content/_ja, /content/_en, /content/ja, /content/en いずれでも可）を対象。
+      固定ページ（about/privacy/contact/search）は含めない設計。
+    {%- endcomment -%}
+    {%- assign docs = docs | sort: "title" -%}
+    {%- for doc in docs -%}
+    {
+      "id": {{ doc.url | relative_url | jsonify }},
+      "title": {{ doc.title | default: "" | jsonify }},
+      "errorText": {{ doc.errorText | default: doc.title | default: "" | jsonify }},
+      "url": {{ doc.url | relative_url | jsonify }},
+      "lang": {{ doc.lang | default: "" | jsonify }},
+      "tags": {{ doc.tags | default: empty | jsonify }},
+      {%- assign _updated = doc.updatedAt | default: doc.date | default: site.time -%}
+      "updatedAt": {%- if doc.updatedAt -%}{{ doc.updatedAt | jsonify }}{%- else -%}{{ _updated | date_to_xmlschema | jsonify }}{%- endif -%},
+      "content": {{ doc.content | strip_html | normalize_whitespace | jsonify }}
+    }{%- unless forloop.last -%},{%- endunless -%}
+    {%- endfor -%}
+  ]
+}
