@@ -92,6 +92,7 @@
       </article>
     </main>
 
+    {% unless page.no_footer %}
     <footer class="site-footer">
       <div>
         © {{ site.time | date: "%Y" }}
@@ -103,6 +104,7 @@
         Build: {{ site.github.build_revision | slice: 0,7 }} · {{ site.time | date: "%Y-%m-%d %H:%M" }}
       </div>
     </footer>
+    {% endunless %}
   </div>
   <script>
 (function () {

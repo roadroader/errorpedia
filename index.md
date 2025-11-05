@@ -2,6 +2,7 @@
 layout: default
 title: Home
 permalink: /
+no_footer: true
 ---
 
 <div class="home" style="max-width:980px;margin:0 auto;padding:1rem;">
