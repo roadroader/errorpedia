@@ -77,40 +77,52 @@ sitemap: false
 </div>
 
 <script>
-  /** ===== Utility ===== */
+  /* Liquid からベースURLを受け取る（この1箇所のみ Liquid を使用） */
   const BASE = {{ "" | relative_url | jsonify }};
   const JSON_URL = (BASE.replace(/\/$/, "") || "") + "/search.json";
+</script>
 
-  /** @param {string} s */
+{% raw %}
+<script>
+  // ===== 型の説明（Liquid が誤認しない形） =====
+  /*
+   * SearchItem: 1件分の記事データ
+   *  - id, title, errorText, url, lang, tags[], updatedAt, content
+   * SearchDB: search.json の全体構造
+   */
+
+  /** 小文字・NFKC正規化 */
   function norm(s) {
     return (s || "").toLowerCase().normalize("NFKC");
   }
-  /** @param {string} s @param {string[]} terms */
+
+  function escapeRegExp(s) {
+    return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  }
+
   function highlight(s, terms) {
     if (!s) return "";
     let out = s;
     for (const t of terms.filter(Boolean)) {
       const re = new RegExp(escapeRegExp(t), "gi");
-      out = out.replace(re, m => `<mark>${m}</mark>`);
+      out = out.replace(re, m => "<mark>" + m + "</mark>");
     }
     return out;
   }
-  /** @param {string} s */
-  function escapeRegExp(s) {
-    return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  }
-  /** @param {string} updatedAt */
+
   function fmtDate(updatedAt) {
     try {
       const d = new Date(updatedAt);
       if (!isFinite(+d)) return updatedAt || "";
       const y = d.getFullYear();
-      const m = String(d.getMonth()+1).padStart(2,"0");
-      const da = String(d.getDate()).padStart(2,"0");
-      return `${y}-${m}-${da}`;
-    } catch { return updatedAt || ""; }
+      const m = String(d.getMonth() + 1).padStart(2, "0");
+      const da = String(d.getDate()).padStart(2, "0");
+      return y + "-" + m + "-" + da;
+    } catch {
+      return updatedAt || "";
+    }
   }
-  /** @param {string} content @param {string[]} terms */
+
   function makeSnippet(content, terms) {
     const text = (content || "").replace(/\s+/g, " ").trim();
     if (!text) return "";
@@ -122,7 +134,7 @@ sitemap: false
     const snip = text.slice(start, end);
     return (start > 0 ? "…" : "") + snip + (end < text.length ? "…" : "");
   }
-  /** Read URL params */
+
   function getParams() {
     const u = new URL(window.location.href);
     const q = u.searchParams.get("q") || "";
@@ -131,21 +143,19 @@ sitemap: false
     const tags = (u.searchParams.get("tags") || "").split(",").filter(Boolean);
     return { q, lang, sort, tags };
   }
-  function setParams({ q, lang, sort, tags }) {
+
+  function setParams(obj) {
     const u = new URL(window.location.href);
-    if (q) u.searchParams.set("q", q); else u.searchParams.delete("q");
-    if (lang) u.searchParams.set("lang", lang); else u.searchParams.delete("lang");
-    if (sort && sort !== "relevance") u.searchParams.set("sort", sort); else u.searchParams.delete("sort");
-    if (tags && tags.length) u.searchParams.set("tags", tags.join(",")); else u.searchParams.delete("tags");
+    if (obj.q) u.searchParams.set("q", obj.q); else u.searchParams.delete("q");
+    if (obj.lang) u.searchParams.set("lang", obj.lang); else u.searchParams.delete("lang");
+    if (obj.sort && obj.sort !== "relevance") u.searchParams.set("sort", obj.sort); else u.searchParams.delete("sort");
+    if (obj.tags && obj.tags.length) u.searchParams.set("tags", obj.tags.join(",")); else u.searchParams.delete("tags");
     history.replaceState(null, "", u.toString());
   }
 
-  /** ===== Data & Search ===== */
-  /** @type {{generatedAt:string, baseurl:string, items:Array<{id:string,title:string,errorText:string,url:string,lang:string,tags:string[],updatedAt:string,content:string}>}} */
+  // ===== データとUI参照 =====
   let DB = { generatedAt: "", baseurl: "", items: [] };
-
-  /** @type {Record<string, number>} */
-  let TAG_FREQ = {};
+  const TAG_FREQ = {};
 
   const $q = document.getElementById("q");
   const $lang = document.getElementById("lang");
@@ -159,15 +169,15 @@ sitemap: false
   async function loadDB() {
     $results.setAttribute("aria-busy", "true");
     const res = await fetch(JSON_URL, { cache: "no-store" });
-    if (!res.ok) throw new Error(`Failed to load ${JSON_URL}`);
+    if (!res.ok) throw new Error("Failed to load search.json");
     DB = await res.json();
-    // Normalize & precompute fields
+
     for (const it of DB.items) {
       it._nTitle = norm(it.title || "");
-      it._nErr   = norm(it.errorText || "");
-      it._nTags  = (it.tags || []).map(norm);
-      it._nCont  = norm(it.content || "");
-      it._date   = new Date(it.updatedAt || 0).getTime() || 0;
+      it._nErr = norm(it.errorText || "");
+      it._nTags = (it.tags || []).map(norm);
+      it._nCont = norm(it.content || "");
+      it._date = new Date(it.updatedAt || 0).getTime() || 0;
       (it.tags || []).forEach(t => { TAG_FREQ[t] = (TAG_FREQ[t] || 0) + 1; });
     }
     buildTagCloud();
@@ -175,56 +185,47 @@ sitemap: false
   }
 
   function buildTagCloud() {
-    const entries = Object.entries(TAG_FREQ).sort((a,b) => b[1]-a[1]).slice(0, 60);
+    const entries = Object.entries(TAG_FREQ).sort((a, b) => b[1] - a[1]).slice(0, 60);
     $tags.innerHTML = "";
-    const { tags: selected } = getParams();
+    const selected = new Set(getParams().tags);
     for (const [tag, freq] of entries) {
-      const id = `tag-${encodeURIComponent(tag)}`;
+      const id = "tag-" + encodeURIComponent(tag);
       const wrap = document.createElement("label");
       wrap.className = "tag-pill";
-      wrap.title = `記事数: ${freq}`;
-      wrap.innerHTML = `
-        <input type="checkbox" id="${id}">
-        <span>${tag}</span><small>(${freq})</small>`;
+      wrap.title = "記事数: " + freq;
+      wrap.innerHTML = '<input type="checkbox" id="' + id + '"><span>' + tag + '</span><small>(' + freq + ')</small>';
       const input = wrap.querySelector("input");
-      if (selected.includes(tag)) input.checked = true;
+      if (selected.has(tag)) input.checked = true;
       input.addEventListener("change", () => {
-        const { q, lang, sort, tags } = getParams();
-        const next = new Set(tags);
+        const p = getParams();
+        const next = new Set(p.tags);
         if (input.checked) next.add(tag); else next.delete(tag);
-        setParams({ q, lang, sort, tags: [...next] });
+        setParams({ q: p.q, lang: p.lang, sort: p.sort, tags: Array.from(next) });
         runSearch();
       });
       $tags.appendChild(wrap);
     }
   }
 
-  /**
-   * Compute score
-   * @param {ReturnType<typeof getParams>} p
-   * @param {*} it
-   */
   function scoreItem(p, it) {
     const query = norm(p.q.trim());
     if (!query) return 0;
     const terms = Array.from(new Set(query.split(/\s+/).filter(Boolean)));
     let s = 0;
-    const fullPhrase = query;
     const fields = {
       title: it._nTitle,
-      errorText: it._nErr,
+      err: it._nErr,
       tags: it._nTags.join(" "),
       content: it._nCont
     };
-    if (fields.title.includes(fullPhrase)) s += 20;
-    if (fields.errorText.includes(fullPhrase)) s += 12;
+    if (fields.title.includes(query)) s += 20;
+    if (fields.err.includes(query)) s += 12;
 
     for (const t of terms) {
       if (!t) continue;
       if (fields.title.includes(t)) s += 10;
-      if (fields.errorText.includes(t)) s += 6;
+      if (fields.err.includes(t)) s += 6;
       if (fields.tags.includes(t)) s += 6;
-      // count limited occurrences in content
       let count = 0, idx = -1, from = 0;
       while ((idx = fields.content.indexOf(t, from)) !== -1) {
         count++; from = idx + t.length;
@@ -232,50 +233,51 @@ sitemap: false
       }
       s += count * 2;
     }
-    // slight recency boost
-    s += Math.min(10, (it._date / (1000*60*60*24*365))) % 10 * 0.1;
+    // ごく弱い新しさブースト
+    s += Math.min(10, (it._date / (1000 * 60 * 60 * 24 * 365))) % 10 * 0.1;
     return s;
   }
 
   function applyFilters(p, items) {
     let arr = items;
     if (p.lang) {
-      arr = arr.filter(it => (it.lang || "").toLowerCase() === p.lang.toLowerCase());
+      const l = p.lang.toLowerCase();
+      arr = arr.filter(it => (it.lang || "").toLowerCase() === l);
     }
     if (p.tags && p.tags.length) {
       arr = arr.filter(it => {
-        const t = new Set((it.tags || []));
-        return p.tags.some(x => t.has(x));
+        const set = new Set(it.tags || []);
+        return p.tags.some(x => set.has(x));
       });
     }
     return arr;
   }
 
   function sortResults(p, rows) {
-    if (p.sort === "newest") rows.sort((a,b) => b._date - a._date);
-    else if (p.sort === "oldest") rows.sort((a,b) => a._date - b._date);
-    else rows.sort((a,b) => (b._score - a._score) || (b._date - a._date));
+    if (p.sort === "newest") rows.sort((a, b) => b._date - a._date);
+    else if (p.sort === "oldest") rows.sort((a, b) => a._date - b._date);
+    else rows.sort((a, b) => (b._score - a._score) || (b._date - a._date));
   }
 
   function render(list, terms) {
     if (!list.length) {
-      $results.innerHTML = `<div class="empty">該当する記事が見つかりませんでした。</div>`;
+      $results.innerHTML = '<div class="empty">該当する記事が見つかりませんでした。</div>';
       return;
     }
     const html = list.map(it => {
       const title = it.title || it.errorText || "(no title)";
       const snip = makeSnippet(it.content, terms);
-      return `
-        <article class="result">
-          <h3><a href="${it.url}">${highlight(title, terms)}</a></h3>
-          <div class="meta">
-            <span>Updated: ${fmtDate(it.updatedAt)}</span>
-            ${it.lang ? `<span>Lang: ${it.lang}</span>` : ""}
-            ${it.tags?.length ? `<span class="tags">${it.tags.map(t=>`<span class="tag">${t}</span>`).join("")}</span>` : ""}
-          </div>
-          ${snip ? `<p class="snip">${highlight(snip, terms)}</p>` : ""}
-        </article>
-      `;
+      return (
+        '<article class="result">' +
+          '<h3><a href="' + it.url + '">' + highlight(title, terms) + '</a></h3>' +
+          '<div class="meta">' +
+            '<span>Updated: ' + fmtDate(it.updatedAt) + '</span>' +
+            (it.lang ? '<span>Lang: ' + it.lang + '</span>' : '') +
+            (it.tags && it.tags.length ? '<span class="tags">' + it.tags.map(t => '<span class="tag">' + t + '</span>').join("") + '</span>' : '') +
+          '</div>' +
+          (snip ? '<p class="snip">' + highlight(snip, terms) + '</p>' : '') +
+        '</article>'
+      );
     }).join("");
     $results.innerHTML = html;
   }
@@ -291,49 +293,52 @@ sitemap: false
 
     let rows = applyFilters(p, DB.items.slice());
     if (qn) {
-      for (const it of rows) {
-        it._score = scoreItem(p, it);
-      }
+      for (const it of rows) it._score = scoreItem(p, it);
       rows = rows.filter(it => it._score > 0);
     } else {
-      // no query: neutral score
       for (const it of rows) it._score = 0;
     }
 
     sortResults(p, rows);
     const shown = rows.slice(0, 100);
 
-    $count.textContent = `${shown.length} / ${rows.length || 0} 件`;
-    $status.textContent = p.q ? `検索語: “${p.q}”` : "全件表示（フィルタ適用可）";
+    $count.textContent = (shown.length + " / " + (rows.length || 0) + " 件");
+    $status.textContent = p.q ? ("検索語: “" + p.q + "”") : "全件表示（フィルタ適用可）";
     render(shown, terms);
   }
 
-  /** ===== Wire up ===== */
-  function debounce(fn, ms=200){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a), ms); }; }
+  function debounce(fn, ms) {
+    let t;
+    return function() {
+      const args = arguments;
+      clearTimeout(t);
+      t = setTimeout(function() { fn.apply(null, args); }, ms);
+    };
+  }
 
   const onQuery = debounce(() => {
-    const { lang, sort, tags } = getParams();
-    setParams({ q: $q.value, lang, sort, tags });
+    const p = getParams();
+    setParams({ q: $q.value, lang: p.lang, sort: p.sort, tags: p.tags });
     runSearch();
   }, 200);
 
   $q.addEventListener("input", onQuery);
   $lang.addEventListener("change", () => {
-    const { q, sort, tags } = getParams();
-    setParams({ q, lang: $lang.value, sort, tags }); runSearch();
+    const p = getParams();
+    setParams({ q: p.q, lang: $lang.value, sort: p.sort, tags: p.tags });
+    runSearch();
   });
   $sort.addEventListener("change", () => {
-    const { q, lang, tags } = getParams();
-    setParams({ q, lang, sort: $sort.value, tags }); runSearch();
+    const p = getParams();
+    setParams({ q: p.q, lang: p.lang, sort: $sort.value, tags: p.tags });
+    runSearch();
   });
   $clear.addEventListener("click", () => {
-    $q.value = "";
     setParams({ q: "", lang: "", sort: "relevance", tags: [] });
     Array.from($tags.querySelectorAll("input[type=checkbox]")).forEach(el => el.checked = false);
     runSearch();
   });
 
-  // Init
   (async () => {
     try {
       const p0 = getParams();
@@ -350,3 +355,4 @@ sitemap: false
     }
   })();
 </script>
+{% endraw %}
