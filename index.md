@@ -13,9 +13,7 @@ permalink: /
   <!-- 最新（日本語） -->
   <section style="margin:1.5rem 0;">
     <h2 style="font-size:1.25rem;margin-bottom:.5rem;">最新記事（日本語）</h2>
-    {%- assign ja_all = site.pages
-        | where_exp: "p", "p.lang == 'ja' or p.path contains 'content/_ja/' or p.path contains 'content/ja/'"
-        | sort: "updatedAt" | reverse -%}
+    {%- assign ja_all = site.pages | where: "lang", "ja" | sort: "updatedAt" | reverse -%}
     <ol style="line-height:1.6;margin-left:1.25rem;">
       {%- for p in ja_all limit:10 -%}
         <li style="margin:.25rem 0;">
@@ -40,9 +38,7 @@ permalink: /
   <!-- Latest (English) -->
   <section style="margin:1.5rem 0;">
     <h2 style="font-size:1.25rem;margin-bottom:.5rem;">Latest Articles (English)</h2>
-    {%- assign en_all = site.pages
-        | where_exp: "p", "p.lang == 'en' or p.path contains 'content/_en/' or p.path contains 'content/en/'"
-        | sort: "updatedAt" | reverse -%}
+    {%- assign en_all = site.pages | where: "lang", "en" | sort: "updatedAt" | reverse -%}
     <ol style="line-height:1.6;margin-left:1.25rem;">
       {%- for p in en_all limit:10 -%}
         <li style="margin:.25rem 0;">
