@@ -8,24 +8,48 @@ sitemap: false
   "generatedAt": {{ site.time | date_to_xmlschema | jsonify }},
   "baseurl": {{ "" | relative_url | jsonify }},
   "items": [
-    {%- assign docs = site.pages | where_exp: "p", "p.path contains 'content/'" -%}
-    {%- comment -%}
-      content/配下（/content/_ja, /content/_en, /content/ja, /content/en いずれでも可）を対象。
-      固定ページ（about/privacy/contact/search）は含めない設計。
-    {%- endcomment -%}
-    {%- assign docs = docs | sort: "title" -%}
-    {%- for doc in docs -%}
-    {
-      "id": {{ doc.url | relative_url | jsonify }},
-      "title": {{ doc.title | default: "" | jsonify }},
-      "errorText": {{ doc.errorText | default: doc.title | default: "" | jsonify }},
-      "url": {{ doc.url | relative_url | jsonify }},
-      "lang": {{ doc.lang | default: "" | jsonify }},
-      "tags": {{ doc.tags | default: empty | jsonify }},
-      {%- assign _updated = doc.updatedAt | default: doc.date | default: site.time -%}
-      "updatedAt": {%- if doc.updatedAt -%}{{ doc.updatedAt | jsonify }}{%- else -%}{{ _updated | date_to_xmlschema | jsonify }}{%- endif -%},
-      "content": {{ doc.content | strip_html | normalize_whitespace | jsonify }}
-    }{%- unless forloop.last -%},{%- endunless -%}
+    {%- assign comma = "" -%}
+
+    {%- comment -%} 1) pages から content/ や _ja/_en 配下を拾う {%- endcomment -%}
+    {%- for p in site.pages -%}
+      {%- assign path = p.path | downcase -%}
+      {%- if path contains '/_ja/' or path contains '/_en/' or path contains 'content/' -%}
+        {{ comma }}
+        {
+          "id": {{ p.url | relative_url | jsonify }},
+          "title": {{ p.title | default: "" | jsonify }},
+          "errorText": {{ p.errorText | default: p.title | default: "" | jsonify }},
+          "url": {{ p.url | relative_url | jsonify }},
+          "lang": {{ p.lang | default: "" | jsonify }},
+          "tags": {{ p.tags | default: empty | jsonify }},
+          {%- assign _updated = p.updatedAt | default: p.date | default: site.time -%}
+          "updatedAt": {%- if p.updatedAt -%}{{ p.updatedAt | jsonify }}{%- else -%}{{ _updated | date_to_xmlschema | jsonify }}{%- endif -%},
+          "content": {{ p.content | strip_html | strip_newlines | replace: "  ", " " | jsonify }}
+        }
+        {%- assign comma = "," -%}
+      {%- endif -%}
+    {%- endfor -%}
+
+    {%- comment -%} 2) すべてのコレクション（_ja/_en を含む）から docs を拾う {%- endcomment -%}
+    {%- for coll in site.collections -%}
+      {%- for doc in coll.docs -%}
+        {%- assign path = doc.path | downcase -%}
+        {%- if path contains '/_ja/' or path contains '/_en/' or path contains 'content/' -%}
+          {{ comma }}
+          {
+            "id": {{ doc.url | relative_url | jsonify }},
+            "title": {{ doc.title | default: "" | jsonify }},
+            "errorText": {{ doc.errorText | default: doc.title | default: "" | jsonify }},
+            "url": {{ doc.url | relative_url | jsonify }},
+            "lang": {{ doc.lang | default: "" | jsonify }},
+            "tags": {{ doc.tags | default: empty | jsonify }},
+            {%- assign _updated = doc.updatedAt | default: doc.date | default: site.time -%}
+            "updatedAt": {%- if doc.updatedAt -%}{{ doc.updatedAt | jsonify }}{%- else -%}{{ _updated | date_to_xmlschema | jsonify }}{%- endif -%},
+            "content": {{ doc.content | strip_html | strip_newlines | replace: "  ", " " | jsonify }}
+          }
+          {%- assign comma = "," -%}
+        {%- endif -%}
+      {%- endfor -%}
     {%- endfor -%}
   ]
 }
