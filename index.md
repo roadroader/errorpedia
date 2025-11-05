@@ -10,10 +10,10 @@ permalink: /
     最新の記事を日本語と英語でそれぞれ10件ずつ表示します。
   </p>
 
-  <!-- 最新（日本語） -->
+  <!-- 最新（日本語）: content/_ja → コレクション site.ja を想定 -->
   <section style="margin:1.5rem 0;">
     <h2 style="font-size:1.25rem;margin-bottom:.5rem;">最新記事（日本語）</h2>
-    {%- assign ja_all = site.pages | where: "lang", "ja" | sort: "updatedAt" | reverse -%}
+    {%- assign ja_all = site.ja | sort: "updatedAt" | reverse -%}
     <ol style="line-height:1.6;margin-left:1.25rem;">
       {%- for p in ja_all limit:10 -%}
         <li style="margin:.25rem 0;">
@@ -35,10 +35,10 @@ permalink: /
     </ol>
   </section>
 
-  <!-- Latest (English) -->
+  <!-- Latest (English): content/_en → コレクション site.en を想定 -->
   <section style="margin:1.5rem 0;">
     <h2 style="font-size:1.25rem;margin-bottom:.5rem;">Latest Articles (English)</h2>
-    {%- assign en_all = site.pages | where: "lang", "en" | sort: "updatedAt" | reverse -%}
+    {%- assign en_all = site.en | sort: "updatedAt" | reverse -%}
     <ol style="line-height:1.6;margin-left:1.25rem;">
       {%- for p in en_all limit:10 -%}
         <li style="margin:.25rem 0;">
