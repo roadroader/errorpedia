@@ -1,168 +1,106 @@
-﻿<!DOCTYPE html>
-<html lang="{{ page.lang | default: 'ja' }}">
+﻿---
+# _layouts/default.html（全面書き直し）
+---
+
+<!DOCTYPE html>
+<html lang="{{ page.lang | default: site.lang | default: 'en' }}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
 
-  {%- comment -%} 公開前は _config.yml の noindex:true に合わせて抑止 {%- endcomment -%}
-  {%- if site.noindex -%}<meta name="robots" content="noindex, nofollow">{%- endif -%}
+  <title>{% if page.title %}{{ page.title }} | {{ site.title | default: site.github.repository_name }}{% else %}{{ site.title | default: site.github.repository_name }}{% endif %}</title>
 
-  <title>{% if page.title %}{{ page.title }} | {{ site.title }}{% else %}{{ site.title }}{% endif %}</title>
+  {% if page.sitemap == false or page.noindex == true %}
+  <meta name="robots" content="noindex,nofollow">
+  {% endif %}
 
-  {%- comment -%} canonical は url/baseurl を考慮して絶対URLに {%- endcomment -%}
-  <link rel="canonical" href="{{ page.url | absolute_url }}">
+  <!-- Theme stylesheet (GitHub Pages themes expose /assets/css/style.css) -->
+  <link rel="stylesheet" href="{{ '/assets/css/style.css?v=' | append: site.github.build_revision | relative_url }}">
 
-  {%- comment -%} 公式プラグインで OGP/構造化データなどを自動出力 {%- endcomment -%}
-  {%- seo -%}
+  <!-- SEO (adds canonical, og, twitter, etc.) -->
+  {% seo %}
 
-  {%- comment -%}
-    記事（collections: ja/en）のときだけ hreflang を出す。
-    固定ページ（about/privacy/contact 等）は出さない。
-  {%- endcomment -%}
-  {%- assign coll = page.collection | default: '' -%}
-  {%- if coll == 'ja' or coll == 'en' -%}
-    {%- if page.lang == 'ja' -%}
-      <link rel="alternate" hreflang="en" href="{{ page.url | replace: '/ja/', '/en/' | absolute_url }}">
-    {%- elsif page.lang == 'en' -%}
-      <link rel="alternate" hreflang="ja" href="{{ page.url | replace: '/en/', '/ja/' | absolute_url }}">
-    {%- endif -%}
-  {%- endif -%}
+  <!-- Optional: alternate/hreflang (front matter に alternates: [{lang:'en', url:'/en/.../'}, ...] があれば出力) -->
+  {% if page.alternates %}
+    {% for alt in page.alternates %}
+      <link rel="alternate" hreflang="{{ alt.lang }}" href="{{ alt.url | absolute_url }}">
+    {% endfor %}
+  {% endif %}
 
   <style>
-    :root {
-      --bg: #ffffff;
-      --fg: #1a1a1a;
-      --muted: #6b7280;
-      --link: #2563eb;
-      --border: #e5e7eb;
-      --card: #fafafa;
-      --radius: 12px;
-      --maxw: 900px;
-    }
-    * { box-sizing: border-box; }
-    html, body { padding:0; margin:0; background:var(--bg); color:var(--fg); }
-    a { color: var(--link); text-decoration: none; }
-    a:hover { text-decoration: underline; }
-    img, video { max-width:100%; height:auto; }
-    code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; }
-    pre { background:#0b1020; color:#e5e7eb; padding:1rem; border-radius:var(--radius); overflow:auto; }
-
-    .container { max-width: var(--maxw); margin: 0 auto; padding: 1.2rem; }
-    .site-header { border-bottom:1px solid var(--border); background:var(--card); }
-    .brand { display:flex; align-items:center; gap:.5rem; }
-    .brand__title { font-weight:700; font-size:1.1rem; }
-    .pill { border:1px solid var(--border); padding:.35rem .6rem; border-radius:999px; color:var(--muted); font-size:.85rem; }
-    nav a { margin-right:1rem; }
-    .lang-switch { margin-left:auto; }
-    .flex { display:flex; align-items:center; gap:.75rem; flex-wrap:wrap; }
-
-    main { padding:1.5rem 0; }
-    article h1 { font-size:1.7rem; margin:.2rem 0 1rem; }
-    article h2 { font-size:1.35rem; margin-top:1.4rem; }
-    article h3 { font-size:1.1rem; margin-top:1.1rem; }
-    blockquote { border-left:4px solid var(--border); margin:1rem 0; padding:.5rem 1rem; color:var(--muted); background:var(--card); border-radius:0 var(--radius) var(--radius) 0; }
-    table { border-collapse:collapse; width:100%; overflow:auto; display:block; }
-    th, td { border:1px solid var(--border); padding:.6rem .5rem; text-align:left; }
-    .meta { color:var(--muted); font-size:.9rem; }
-    footer { border-top:1px solid var(--border); padding:1.2rem 0; background:var(--card); }
-    .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); border:0; }
-    .ad { margin:1.2rem 0; }
+    /* ちょい足しの素朴な装飾（テーマの邪魔をしない程度） */
+    .site-wrap { max-width: 980px; margin: 0 auto; padding: 1.2rem; }
+    .site-header { display:flex; gap:1rem; align-items:center; justify-content:space-between; margin-bottom:1rem; }
+    .brand a { text-decoration:none; font-weight:600; }
+    .site-nav { display:flex; flex-wrap:wrap; gap:.75rem; }
+    .site-nav a { text-decoration:none; padding:.35rem .6rem; border:1px solid #e5e7eb; border-radius:.5rem; }
+    .site-nav a:hover { background:#f8fafc; }
+    .meta-row { display:flex; gap:.75rem; flex-wrap:wrap; color:#556; font-size:.95rem; margin:.25rem 0 1rem; }
+    .tags-row { display:flex; gap:.35rem; flex-wrap:wrap; margin:.25rem 0 1rem; }
+    .tag { display:inline-block; background:#f1f5f9; border:1px solid #e5e7eb; padding:.1rem .45rem; border-radius:.4rem; font-size:.85rem; text-decoration:none; }
+    .site-footer { margin-top:2rem; padding-top:1rem; border-top:1px solid #eee; color:#667; font-size:.9rem; }
+    @media (max-width: 720px){ .site-header { flex-direction:column; align-items:flex-start; gap:.5rem; } }
   </style>
-
-  {%- comment -%} GA4（_config.yml に ga4_id があれば有効化） {%- endcomment -%}
-  {%- if site.ga4_id -%}
-  <script async src="https://www.googletagmanager.com/gtag/js?id={{ site.ga4_id }}"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-    gtag('config','{{ site.ga4_id }}');
-  </script>
-  {%- endif -%}
 </head>
 
 <body>
-  <a class="sr-only" href="#content">Skip to content</a>
+  <a href="#main" style="position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden;">Skip to content</a>
 
-  <header class="site-header">
-    <div class="container flex">
+  <div class="site-wrap">
+    <header class="site-header">
       <div class="brand">
-        <a class="brand__title" href="{{ '/' | relative_url }}">{{ site.title }}</a>
-        <span class="pill">{{ site.description }}</span>
+        <a href="{{ '/' | relative_url }}">{{ site.title | default: site.github.repository_name }}</a>
       </div>
-
-      <nav class="flex" aria-label="Primary">
+      <nav class="site-nav" aria-label="Primary">
         <a href="{{ '/' | relative_url }}">Home</a>
         <a href="{{ '/about/'   | relative_url }}">About</a>
         <a href="{{ '/privacy/' | relative_url }}">Privacy</a>
         <a href="{{ '/contact/' | relative_url }}">Contact</a>
-        <a href="{{ '/search/' | relative_url }}">Search</a>
+        <a href="{{ '/tags/'    | relative_url }}">Tags</a>
+        <a href="{{ '/search/'  | relative_url }}">Search</a>
       </nav>
+    </header>
 
-      {%- if coll == 'ja' or coll == 'en' -%}
-      <div class="lang-switch">
-        {%- if page.lang == 'en' -%}
-          <a href="{{ page.url | replace: '/en/', '/ja/' | relative_url }}">日本語</a>
-        {%- else -%}
-          <a href="{{ page.url | replace: '/ja/', '/en/' | relative_url }}">English</a>
-        {%- endif -%}
+    <main id="main" role="main">
+      <article>
+        {% if page.title %}<h1>{{ page.title }}</h1>{% endif %}
+
+        {%- assign _updated = page.updatedAt | default: page.last_modified_at | default: page.date -%}
+        <div class="meta-row">
+          {% if _updated %}
+            <span>Last updated:
+              <time datetime="{{ _updated | date_to_xmlschema }}">{{ _updated | date: "%Y-%m-%d" }}</time>
+            </span>
+          {% endif %}
+          {% if page.lang %}
+            <span>Lang: {{ page.lang }}</span>
+          {% endif %}
+        </div>
+
+        {% if page.tags and page.tags.size > 0 %}
+          <div class="tags-row" aria-label="Tags">
+            <span style="align-self:center;">Tags:</span>
+            {% for t in page.tags %}
+              <a class="tag" href="{{ '/search/?tags=' | append: t | relative_url }}">{{ t }}</a>
+            {% endfor %}
+          </div>
+        {% endif %}
+
+        {{ content }}
+      </article>
+    </main>
+
+    <footer class="site-footer">
+      <div>
+        © {{ site.time | date: "%Y" }}
+        {{ site.author.name | default: site.github.owner_name | default: site.github.repository_owner }}
+        · <a href="{{ site.github.repository_url }}">GitHub</a>
+        {% if page.path %} · <a href="{{ site.github.repository_url }}/blob/{{ site.github.build_revision }}/{{ page.path }}">View source</a>{% endif %}
       </div>
-      {%- endif -%}
-    </div>
-  </header>
-
-  <main id="content" class="container site-main">
-    {%- comment -%} 上部広告：_includes/ad.html を用意し、_config.yml に adsense_id を設定すると出力 {%- endcomment -%}
-    {%- if site.adsense_id -%}
-      <div class="ad">{% include ad.html %}</div>
-    {%- endif -%}
-
-    <article role="article">
-      {%- if page.title -%}<h1>{{ page.title }}</h1>{%- endif -%}
-
-      <div class="meta">
-        {%- assign updated = page.last_modified_at | default: page.date | default: site.time -%}
-        {%- if updated -%}Last updated: {{ updated | date: "%Y-%m-%d" }}{%- endif -%}
-        {%- if page.tags and page.tags != empty -%}
-          &nbsp;•&nbsp;Tags:
-          {%- for t in page.tags -%}
-            <span class="pill">{{ t }}</span>{% unless forloop.last %} {% endunless %}
-          {%- endfor -%}
-        {%- endif -%}
+      <div>
+        Build: {{ site.github.build_revision | slice: 0,7 }} · {{ site.time | date: "%Y-%m-%d %H:%M" }}
       </div>
-
-      {{ content }}
-    </article>
-
-    {%- if site.adsense_id -%}
-      <div class="ad">{% include ad.html %}</div>
-    {%- endif -%}
-  </main>
-
-  <footer class="container">
-    <div class="meta">
-      &copy; {{ site.time | date: "%Y" }} {{ site.title }}.
-      <span>All rights reserved.</span>
-      {%- if jekyll.environment == "development" -%}
-        &nbsp;•&nbsp;Build: {{ site.time | date: "%Y-%m-%d %H:%M" }}
-      {%- endif -%}
-    </div>
-  </footer>
-
-  <script>
-    // 外部リンクは新規タブで開く（相対パスは対象外）
-    (function () {
-      var links = document.querySelectorAll('a[href^="http"]');
-      var host = location.host;
-      for (var i = 0; i < links.length; i++) {
-        try {
-          if (links[i].host !== host) {
-            links[i].setAttribute('target', '_blank');
-            links[i].setAttribute('rel', 'noopener noreferrer');
-          }
-        } catch (e) {}
-      }
-    })();
-  </script>
+    </footer>
+  </div>
 </body>
 </html>
