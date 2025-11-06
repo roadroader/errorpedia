@@ -78,6 +78,7 @@ defaults:
 plugins:
   - jekyll-sitemap
   - jekyll-seo-tag
+  - jekyll-paginate-v2
 
 # jekyll-seo-tag 用の最低限メタ
 seo:

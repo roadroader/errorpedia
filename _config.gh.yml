@@ -1,0 +1,8 @@
+# GitHub Pages プロジェクトページ用
+url: "https://roadroader.github.io"
+baseurl: "/errorpedia"
+
+# 公開可否（任意）
+noindex: false
+
+# Plugins は共通（安全牌のみ）。paginate-v2 は使わない

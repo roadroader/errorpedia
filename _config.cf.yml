@@ -1,0 +1,21 @@
+# Cloudflare Pages 本番想定
+url: "https://errorpedia.pages.dev"   # 独自ドメインに切り替えたらここを置換
+baseurl: ""
+
+# 本番公開
+noindex: false
+
+# 本番向けオプション（任意）
+sass:
+  style: compressed
+
+# Cloudflare 側で使う拡張プラグイン（必要なら）
+plugins:
+  - jekyll-paginate-v2
+
+# jekyll-paginate-v2 を使うなら代表的な設定例（任意）
+# pagination:
+#   enabled: true
+#   per_page: 10
+#   title: ":title - ページ :num"
+#   permalink: "/page/:num/"
