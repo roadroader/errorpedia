@@ -1,21 +1,32 @@
-# Cloudflare Pages 本番想定
-url: "https://errorpedia.pages.dev"   # 独自ドメインに切り替えたらここを置換
+# _config.cf.yml — Cloudflare Pages (Production)
+
+# 配信URL（独自ドメインに切替えたら置換）
+url: "https://errorpedia.pages.dev"
 baseurl: ""
 
-# 本番公開
+# 本番はインデックス許可
 noindex: false
 
-# 本番向けオプション（任意）
+# 本番向けのSass圧縮
 sass:
   style: compressed
 
-# Cloudflare 側で使う拡張プラグイン（必要なら）
+# ⚠ 配列は上書きされるため、共通＋追加分を“全部”並べる
 plugins:
+  - jekyll-sitemap
+  - jekyll-seo-tag
   - jekyll-paginate-v2
 
-# jekyll-paginate-v2 を使うなら代表的な設定例（任意）
-# pagination:
-#   enabled: true
-#   per_page: 10
-#   title: ":title - ページ :num"
-#   permalink: "/page/:num/"
+# jekyll-paginate-v2 のデフォルト（安全運用のため全体では未有効化）
+# 使うページのフロントマターで `pagination: enabled: true` を指定して有効化する
+pagination:
+  enabled: false              # ← 各ページ側で true にする
+  per_page: 10
+  permalink: "/page/:num/"
+  title: ":title - ページ :num"
+  sort_field: "updatedAt"     # 記事の front matter に合わせて並び替え
+  sort_reverse: true
+  # collection: "ja"          # 各ページ側で対象コレクションを指定（例: ja / en）
+  # trail:
+  #   before: 2
+  #   after: 2
