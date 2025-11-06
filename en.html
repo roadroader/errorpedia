@@ -1,0 +1,28 @@
+---
+layout: default
+title: Posts (EN)
+permalink: /en/
+pagination:
+  enabled: true
+  collection: en
+  per_page: 10
+  sort_field: updatedAt
+  sort_reverse: true
+  permalink: "/en/page/:num/"
+---
+<ul>
+  {% for item in paginator.docs %}
+    <li><a href="{{ item.url | relative_url }}">{{ item.title }}</a></li>
+  {% endfor %}
+</ul>
+<nav class="pager">
+  {% if paginator.previous_page %}
+    <a href="{{ paginator.previous_page_path | relative_url }}">← Prev</a>
+  {% endif %}
+  {% for page in (1..paginator.total_pages) %}
+    <a href="{{ paginator.paginate_path | replace: ':num', page | relative_url }}">{{ page }}</a>
+  {% endfor %}
+  {% if paginator.next_page %}
+    <a href="{{ paginator.next_page_path | relative_url }}">Next →</a>
+  {% endif %}
+</nav>
